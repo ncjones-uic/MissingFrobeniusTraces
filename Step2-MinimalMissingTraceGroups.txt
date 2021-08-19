@@ -1,0 +1,237 @@
+/* STEP 2:  IT IS RECOMMENDED THAT YOU PASTE THE FOLLOWING CODE INTO A RUNNING MAGMA PROMPT IN BATCHES (FROM "START BATCH N" TO "END BATCH N"), AS INDICATED BELOW. */
+
+
+
+
+/* START BATCH 1 */
+
+MasterList := [];
+TheSet := {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 24, 25, 26, 27, 28, 30, 32, 36};
+
+for m in TheSet do
+	print "level equals";
+	print m;
+	Lm := CumminsPauliGL2Groups(m,0);
+	SDLm := ThinDownToSurjectiveDet(Lm,m);
+	MTLm := ThinDownToMinimalMissingTraceGroups(SDLm,m);
+	if #MTLm eq 0 then
+		print "No minimal missing trace groups";
+	end if;
+	if #MTLm ne 0 then
+		MMTLm := ThinDownByMaximality(MTLm,m);
+		MasterList := MasterList cat MMTLm;
+		print "Number of (maximal) minimal missing trace groups:";
+		print #MMTLm;
+	end if;
+	NMLm := ThinDownToNonMissingTraceGroups(SDLm,m);
+	if #NMLm ne 0 then
+		ADLm := ThinDownToAdmissibleGroups(NMLm,m);
+		if #ADLm ne 0 then
+			HLm := FormingHigherLevelMTGroups(ADLm,m);
+			print "level and size of list of higher level MT groups equal";
+			print <m,#HLm>;
+			for n := 1 to #HLm do
+				if not HLm[n,10] in TheSet then
+					Append(~MasterList,HLm[n]);
+				end if;
+			end for;
+		end if;
+	end if;
+	if not 2*m in TheSet then
+		print "level equals";
+		print 2*m;
+		ThinLm := ThinDownToContainsMinusIdentity(NMLm,m);
+		L2m := TwoTimesMComputation(ThinLm,m);
+		SDL2m := ThinDownToSurjectiveDet(L2m,2*m);
+		MTL2m := ThinDownToMinimalMissingTraceGroups(SDL2m,2*m);
+		if #MTL2m eq 0 then
+			print "No minimal missing trace groups";
+		end if;
+		if #MTL2m ne 0 then
+			MMTL2m := ThinDownByMaximality(MTL2m,2*m);
+			MasterList := MasterList cat MMTL2m;
+			print "Number of (maximal) minimal missing trace groups:";
+			print #MMTL2m;
+		end if;
+		NML2m := ThinDownToNonMissingTraceGroups(SDL2m,2*m);
+		if #NML2m ne 0 then
+			ADL2m := ThinDownToAdmissibleGroups(NML2m,2*m);
+			if #ADL2m ne 0 then
+				HL2m := FormingHigherLevelMTGroups(ADL2m,2*m);
+				print "level and size of list equal";
+				print <2*m,#HL2m>;
+				MasterList := MasterList cat HL2m;
+			end if;
+		end if;
+	end if;
+end for;
+
+/* THE ABOVE COMPUTATION PRODUCES ALL MAXIMAL GENUS ZERO MISSING TRACE GROUPS G WITH THE PROPERTY THAT THE SL_2-LEVEL OF <G,-I> IS IN TheSet. IT REMAINS TO DETERMINE THE MAXIMAL GENUS ZERO MISSING TRACE GROUPS G FOR WHICH THE SL_2-LEVEL OF <G,-I> IS EQUAL TO 48. */
+
+/* END BATCH 1 */
+
+
+
+
+
+/* START BATCH 2 */
+
+S48 := MatrixGroup<2, Integers(48) | [9,47,34,39], [35,6,12,35], [7,26,44,47], [47,33,30,17], [25,30,36,1]>;
+
+L48 := [<S48,S48,Genus(S48,48),48>];
+
+/* S48 IS THE ONLY SUBGROUP OF SL(2,INTEGERS(48)), UP TO CONJUGATION IN GL(2,INTEGERS(48)), CONTAINING -I AND OF SL2-LEVEL 48 AND GENUS ZERO.  IT REMAINS TO SHOW THAT THERE ARE NO MINIMAL MISSING TRACE GROUPS OF GENUS ZERO AND SL2-LEVEL 48 OR 96. */
+
+f, GPerm := PermutationRepresentation(GL(2,Integers(48)));
+
+ListOfAmplifiers := [];
+for x in DoubleCosetRepresentatives(GPerm,f(S48),f(S48)) do
+	g := x@@f;
+	Amp := MatrixGroup<2, Integers(48) | Generators(S48), g>;
+	SAmp := Amp meet SL(2,Integers(48));
+	if #SAmp eq #S48 then
+		Append(~ListOfAmplifiers,g);
+	end if;
+end for;
+
+Level1Amps := [];
+for x := 1 to #ListOfAmplifiers do
+	g := ListOfAmplifiers[x];
+	G := MatrixGroup<2, Integers(48) | Generators(S48), g >;
+	if #G gt #S48 and #(G meet SL(2,Integers(48))) eq #S48 then    
+		isnew := true;
+		for y := 1 to #Level1Amps do
+			if IsConjugate(GL(2,Integers(48)),G,Level1Amps[y,1]) then   
+				isnew := false;
+				break y;
+			end if;
+		end for;
+		if isnew eq true then
+			Append(~Level1Amps,<G,G meet SL(2,Integers(48)), Genus(G,48),48>);   
+		end if;
+	end if;
+end for;
+
+Level2Amps := [];
+for x := 1 to #Level1Amps do
+	for y := 1 to #ListOfAmplifiers do
+		G := Level1Amps[x,1];
+		g := ListOfAmplifiers[y];
+		GAmp := MatrixGroup<2, Integers(48) | Generators(G), g >;
+		if #GAmp gt #G and #(GAmp meet SL(2,Integers(48))) eq #S48 then    
+			isnew := true;
+			for z := 1 to #Level2Amps do
+				if IsConjugate(GL(2,Integers(48)),GAmp,Level2Amps[z,1]) then   
+					isnew := false;
+					break y;
+				end if;
+			end for;
+			if isnew eq true then
+				Append(~Level2Amps,<GAmp,GAmp meet SL(2,Integers(48)), Genus(GAmp,48),48>);   
+			end if;
+		end if;
+	end for;
+end for;
+
+Level3Amps := [];
+for x := 1 to #Level2Amps do
+	for y := 1 to #ListOfAmplifiers do
+		G := Level2Amps[x,1];
+		g := ListOfAmplifiers[y];
+		GAmp := MatrixGroup<2, Integers(48) | Generators(G), g >;
+		if #GAmp gt #G and #(GAmp meet SL(2,Integers(48))) eq #S48 then    
+			isnew := true;
+			for z := 1 to #Level3Amps do
+				if IsConjugate(GL(2,Integers(48)),GAmp,Level3Amps[z,1]) then   
+					isnew := false;
+					break y;
+				end if;
+			end for;
+			if isnew eq true then
+				Append(~Level3Amps,<GAmp,GAmp meet SL(2,Integers(48)), Genus(GAmp,48),48>);   
+			end if;
+		end if;
+	end for;
+end for;
+
+Level3AmpsFullDet := [];
+for x := 1 to #Level3Amps do
+	if #DetOfGroup(Level3Amps[x,1],48) eq 16 then
+		Append(~Level3AmpsFullDet,Level3Amps[x]);		
+	end if;
+end for;
+
+Level3AmpsNotFullDet := [];
+for x := 1 to #Level3Amps do
+	if not #DetOfGroup(Level3Amps[x,1],48) eq 16 then
+		Append(~Level3AmpsNotFullDet,Level3Amps[x]);
+	end if;
+end for;
+
+
+Level4Amps := [];
+for x := 1 to #Level3AmpsNotFullDet do
+	for y := 1 to #ListOfAmplifiers do
+		G := Level3AmpsNotFullDet[x,1];
+		g := ListOfAmplifiers[y];
+		GAmp := MatrixGroup<2, Integers(48) | Generators(G), g >;
+		if #GAmp gt #G and #(GAmp meet SL(2,Integers(48))) eq #S48 then    
+			isnew := true;
+			for z := 1 to #Level4Amps do
+				if IsConjugate(GL(2,Integers(48)),GAmp,Level4Amps[z,1]) then   
+					isnew := false;
+					break y;
+				end if;
+			end for;
+			if isnew eq true then
+				Append(~Level4Amps,<GAmp,GAmp meet SL(2,Integers(48)), Genus(GAmp,48),48>);   
+			end if;
+		end if;
+	end for;
+end for;
+
+L48 := L48 cat Level1Amps cat Level2Amps cat Level3Amps cat Level4Amps;
+L48 := NoConjugates(L48,48);
+
+/* NOTE: 4 STEPS SUFFICES BECAUSE THE IMAGE OF DETERMINANT GROWS AT EACH STEP, AND (Z/48Z)^* IS A 2-GROUP OF ORDER 16; THUS L48 IS THE LIST OF ALL GENUS ZERO GROUPS G CONTAINING -I AND OF SL2-LEVEL 48. */
+
+/* END BATCH 2 */
+
+
+
+
+
+/* START BATCH 3 */
+
+SDL48 := ThinDownToSurjectiveDet(L48,48);
+MTL48 := ThinDownToMinimalMissingTraceGroups(SDL48,48);
+if #MTL48 eq 0 then
+	print "No minimal missing trace groups";
+end if;
+if #MTL48 ne 0 then
+	MMTL48 := ThinDownByMaximality(MTL48,48);
+	MasterList := MasterList cat MMTL48;
+	print "Number of (maximal) minimal missing trace groups of level 48:";
+	print #MMTL48;
+end if;
+
+ThinL48 := ThinDownToContainsMinusIdentity(L48,48);
+L96 := TwoTimesMComputation(ThinL48,48);
+
+print "Number of GL2-subgroups of SL2-level 96 and genus zero:";
+print #L96;
+
+/* THIS COMPUTATION SHOWS THAT THERE IS NO GENUS ZERO SUBGROUP G OF GL(2,INTEGERS(96)) SATISFYING -I NOT IN G AND FOR WHICH THE SL2-LEVEL OF <-I,G> EQUALS 48. IN PARTICULAR, THERE ARE NO MINIMAL MISSING TRACE GROUP OF GENUS ZERO AND LEVEL 96. */
+
+/* END BATCH 3 */
+
+
+
+
+
+/* START BATCH 4 */
+
+MasterList;
+
+/* END BATCH 4 */
+
